@@ -5,7 +5,9 @@ const google = require('googleapis');
 const OAuth2 = google.auth.OAuth2;
 const swig = require('swig')
 const https = require('https')
-
+var utils = {
+  z:0
+}
 // setup
 var AUTH_URL;
 fs.readFile('client_secret.json', function processClientSecrets(err, content) {
@@ -24,12 +26,12 @@ var scopes = [
   "https://www.googleapis.com/auth/classroom.rosters.readonly"
 ]
 var oauth2Client;
-function avg(a){
-  s = 0
+function avg(a,callback,iter){
+  var s = 0
   for(i in a){
     s+= a[i]
   }
-  return s/len(a)
+  callback((s/a.length) * 100,iter)
 }
 function setAuth(j,callback){
   CLIENT_ID = j.web.client_id
@@ -76,7 +78,8 @@ function getSubjects(token,callback){
                 if(j.courses[i].courseState != "ARCHIVED"){
                     r.push({
                         name : j.courses[i].name,
-                        section : j.courses[i].section
+                        section : j.courses[i].section,
+                        id : j.courses[i].id
                     })
                 }
             }
@@ -84,8 +87,8 @@ function getSubjects(token,callback){
         })
     })
 }
-function compileGrades(token,id,courseId,callback){
-  https.get("https://classroom.googleapis.com/v1/courses/" + id + "/courseWork?access_token=" + token,function(res){
+function compileGrades(token,id,courseId,iter,callback){
+  https.get("https://classroom.googleapis.com/v1/courses/" + courseId + "/courseWork?access_token=" + token,function(res){
         var rawData = '';
         res.on('data', (chunk) => rawData += chunk);
         res.on('end', () => {
@@ -94,19 +97,22 @@ function compileGrades(token,id,courseId,callback){
           for(i in j.courseWork){
             var a = j.courseWork[i];
             if(Number(a.maxPoints) != 100){
-              goodIds.push({id:a.id,max:a.maxPoints})
+              goodIds.push({id:a.id,maxPoints:a.maxPoints})
             }
+          }
+          if(goodIds.length == 0){
+            callback(-1,iter)
           }
           var grades = []
           for(i in goodIds){
-            https.get("https://classroom.googleapis.com/v1/courses/" + id + "/courseWork/" + goodIds[i].id + "/studentSubmissions?access_token=" + token,function(res){
+            https.get("https://classroom.googleapis.com/v1/courses/" + courseId + "/courseWork/" + goodIds[i].id + "/studentSubmissions?access_token=" + function(res){
               var rawData = '';
               res.on('data', (chunk) => rawData += chunk);
               res.on('end', () => {
                 var j2 = JSON.parse(rawData);
-                grades.push(j2.studentSubmissions.assignedGrade/goodIds[i].maxPoints)
-                if(i == goodIds.length){
-                  callback(avg(grades))
+                grades.push(j2.studentSubmissions[0].assignedGrade/goodIds[0].maxPoints)
+                if(i == goodIds.length-1){
+                  avg(grades,callback,iter)
                 }
               })
             })
@@ -144,6 +150,12 @@ function getMatches(id,subject,section,callback){
                   }
                 }
               } else{
+                for( i in user.subjects){
+                  var sub = user.subjects[i].name
+                  if(sub.toLowerCase().search("geography") >=0){
+                    goodUsers.push({id:user.id,fullName:user.fullName})
+                  }
+                }
               }
             }
         }
@@ -196,19 +208,30 @@ router.get('/auth',(req,res) =>{
                       for(i in j.users){
                           if(j.users[i].id == parsedData.id){
                               j.users[i].subjects = callData
-
                           }
                       }
-                    compileGrades(token,parsedData.id,)
-                    fs.writeFile("./users.json", JSON.stringify(j,null,4), function(err) {
-                        if(err) {
-                            return console.log(err);
+                    for(i in j.users){
+                      if(j.users[i].id == parsedData.id){
+                        for(z=0;z<j.users[i].subjects.length;z++){
+                          compileGrades(token,parsedData.id,j.users[i].subjects[z].id,[i,z],function(myAvg,iter){
+                            fs.writeFile("./users.json", JSON.stringify(j,null,4), function(err) {
+                                if(err) {
+                                    return console.log(err);
+                                }
+                            }); 
+                            console.log(j.users[iter[0]].subjects.length,iter[1],iter[0],myAvg)
+                            j.users[iter[0]].subjects[iter[1]].average = myAvg
+                            if(iter[1] == j.users[iter[0]].subjects.length - 1){
+                              res.send(f({
+                                  NAME:parsedData.name.fullName,
+                                  subjects : callData,
+                                  code : j.users[iter[0]].id
+                              }))
+                            }
+                          })
                         }
-                    }); 
-                      res.send(f({
-                          NAME:parsedData.name.fullName,
-                            subjects : callData       
-                      }))
+                      }
+                    }
                   })
               })
             } catch (e) {

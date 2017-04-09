@@ -41,7 +41,7 @@
             <table class="table">
                 <tbody>
                     {% for subject in subjects %}
-                        <tr><td>{{ subject.name }}</td><td>{{ subject.section }}</td></tr>
+                        <tr onclick="window.location.href=encodeURI('https://team-prestige-calderwhite.c9users.io/app/getMatches?id={{code}}&subject={{subject.name}}&&section={{subject.section}}')"><td>{{ subject.name }}</td><td>{{ subject.section }}</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
