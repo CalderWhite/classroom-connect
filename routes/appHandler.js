@@ -4,26 +4,7 @@ const fs = require('fs');
 const google = require('googleapis');
 const OAuth2 = google.auth.OAuth2;
 const swig = require('swig')
-const http = require('http')
-// database
-const pg = require('pg');
-pg.defaults.ssl = true;
-// misc. functions (methods)
-var myClient;
-// the command to sign in :
-// psql --host=ec2-23-23-223-2.compute-1.amazonaws.com --dbname=d2a8fvjr75j0va --username=ywtxabemqjdviz
-if (!process.env.DATABASE_URL) {
-  myClient = new pg.Client({
-    user: "ywtxabemqjdviz",
-    password: "afb550105b6176f9942d3def0ee7cf0ea24a6a60228971ef5c8a21fed357f260",
-    database: "d2a8fvjr75j0va",
-    port: 5432,
-    host: "ec2-23-23-223-2.compute-1.amazonaws.com",
-    ssl: true
-  });
-} else {
-  myClient = pg;
-}
+const https = require('https')
 
 // setup
 var AUTH_URL;
@@ -86,16 +67,38 @@ router.get('/signup',function(req,res,next){
     var d = swig.compileFile('./views/signup.html')
     res.send(d({auth_url:AUTH_URL}))
 })
+router.get('/login',function(req,res,next){
+    var d = swig.compileFile('./views/login.html')
+    res.send(d({auth_url:AUTH_URL}))
+})
 router.get('/auth',(req,res) =>{
     getUser(req.query.code,function(token){
-        console.log("https://classroom.googleapis.com/v1/userProfiles/me?access_token=" + token)
-        http.get("https://classroom.googleapis.com/v1/userProfiles/me?access_token=" + token,function(res){
+        https.get("https://classroom.googleapis.com/v1/userProfiles/me?access_token=" + token,function(rd){
             var rawData = '';
-            res.on('data', (chunk) => rawData += chunk);
-            res.on('end', () => {
+            rd.on('data', (chunk) => rawData += chunk);
+            rd.on('end', () => {
             try {
               var parsedData = JSON.parse(rawData);
-              res.send(parsedData);
+              var prev = false;
+              fs.readFile("users.json",function(err,data){
+                  var j = JSON.parse(data);
+                  var prev = false
+                  for(i in j.users){
+                      if(j.users[i].id == parsedData.id){
+                          prev = true
+                      }
+                  }
+                  if(!prev){
+                      j.users.push({id:parsedData.id,token:token})
+                  }
+                  var f = swig.compileFile("./views/app.html")
+                  res.send(f({NAME:parsedData.name.fullName}))
+                    fs.writeFile("./users.json", JSON.stringify(j), function(err) {
+                        if(err) {
+                            return console.log(err);
+                        }
+                    }); 
+              })
             } catch (e) {
               res.send(e.message);
             }
