@@ -58,6 +58,29 @@ function getUser(code,callback){
     }
   });
 }
+function getSubjects(token,callback){
+    https.get("https://classroom.googleapis.com/v1/courses?access_token=" + token,function(res){
+        var rawData = '';
+        res.on('data', (chunk) => rawData += chunk);
+        res.on('end', () => {
+            var j = JSON.parse(rawData);
+            var r = []
+            for(i in j.courses){
+                r.push({
+                    name : j.courses[i].name,
+                    section : j.courses[i].section
+                })
+            }
+            callback(r)
+        })
+    })
+}
+
+function getMatches(subject,section){
+    
+}
+
+
 // routes
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -89,10 +112,21 @@ router.get('/auth',(req,res) =>{
                       }
                   }
                   if(!prev){
-                      j.users.push({id:parsedData.id,token:token})
+                      j.users.push({
+                          id:parsedData.id,
+                          token:token
+                          
+                      })
+                  } else{
+                      j.users[i].token = token;
                   }
                   var f = swig.compileFile("./views/app.html")
-                  res.send(f({NAME:parsedData.name.fullName}))
+                  getSubjects(token,function(callData){
+                      res.send(f({
+                          NAME:parsedData.name.fullName,
+                            subjects : callData       
+                      }))
+                  })
                     fs.writeFile("./users.json", JSON.stringify(j), function(err) {
                         if(err) {
                             return console.log(err);

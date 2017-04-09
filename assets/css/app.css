@@ -1,0 +1,6 @@
+.row{
+    margin:0px;
+}
+tbody > tr:hover{
+    background:#F0F0F0;
+}
