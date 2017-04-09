@@ -24,6 +24,13 @@ var scopes = [
   "https://www.googleapis.com/auth/classroom.rosters.readonly"
 ]
 var oauth2Client;
+function avg(a){
+  s = 0
+  for(i in a){
+    s+= a[i]
+  }
+  return s/len(a)
+}
 function setAuth(j,callback){
   CLIENT_ID = j.web.client_id
   CLIENT_SECRET = j.web.client_secret
@@ -66,18 +73,82 @@ function getSubjects(token,callback){
             var j = JSON.parse(rawData);
             var r = []
             for(i in j.courses){
-                r.push({
-                    name : j.courses[i].name,
-                    section : j.courses[i].section
-                })
+                if(j.courses[i].courseState != "ARCHIVED"){
+                    r.push({
+                        name : j.courses[i].name,
+                        section : j.courses[i].section
+                    })
+                }
             }
             callback(r)
         })
     })
 }
-
-function getMatches(subject,section){
-    
+function compileGrades(token,id,courseId,callback){
+  https.get("https://classroom.googleapis.com/v1/courses/" + id + "/courseWork?access_token=" + token,function(res){
+        var rawData = '';
+        res.on('data', (chunk) => rawData += chunk);
+        res.on('end', () => {
+          var j = JSON.parse(rawData)
+          var goodIds = []
+          for(i in j.courseWork){
+            var a = j.courseWork[i];
+            if(Number(a.maxPoints) != 100){
+              goodIds.push({id:a.id,max:a.maxPoints})
+            }
+          }
+          var grades = []
+          for(i in goodIds){
+            https.get("https://classroom.googleapis.com/v1/courses/" + id + "/courseWork/" + goodIds[i].id + "/studentSubmissions?access_token=" + token,function(res){
+              var rawData = '';
+              res.on('data', (chunk) => rawData += chunk);
+              res.on('end', () => {
+                var j2 = JSON.parse(rawData);
+                grades.push(j2.studentSubmissions.assignedGrade/goodIds[i].maxPoints)
+                if(i == goodIds.length){
+                  callback(avg(grades))
+                }
+              })
+            })
+          }
+        })
+  })
+}
+function getMatches(id,subject,section,callback){
+    fs.readFile('users.json',function(err,content){
+        var j = JSON.parse(content)
+        // define the type of the subject string
+        var lookforcode = true;
+        if(subject.split(" ")[0].length != 6){
+          lookforcode = false;
+          for(i=0;i<10;i++){
+            if(subject.replace(/ /g,"")[3] == i.toString()){
+              lookforcode = true;
+            }
+          }
+        }
+        if(lookforcode){
+          var thecode = subject.replace(/ /g,"").substr(0,6)
+        }
+        // alogrithm
+        var goodUsers = [];
+        for(i in j.users){
+            var user = j.users[i]
+            if(user.id != id){
+              if(lookforcode){
+                for(i in user.subjects){
+                  var sub = user.subjects[i]
+                  var newName = sub.name.replace(/ /g,"").substr(0,6)
+                  if(newName == thecode){
+                    goodUsers.push({id:user.id,fullName:user.fullName})
+                  }
+                }
+              } else{
+              }
+            }
+        }
+        callback(goodUsers);
+    })
 }
 
 
@@ -114,24 +185,31 @@ router.get('/auth',(req,res) =>{
                   if(!prev){
                       j.users.push({
                           id:parsedData.id,
-                          token:token
-                          
+                          token:token,
+                          fullName:parsedData.name.fullName
                       })
                   } else{
                       j.users[i].token = token;
                   }
                   var f = swig.compileFile("./views/app.html")
                   getSubjects(token,function(callData){
+                      for(i in j.users){
+                          if(j.users[i].id == parsedData.id){
+                              j.users[i].subjects = callData
+
+                          }
+                      }
+                    compileGrades(token,parsedData.id,)
+                    fs.writeFile("./users.json", JSON.stringify(j,null,4), function(err) {
+                        if(err) {
+                            return console.log(err);
+                        }
+                    }); 
                       res.send(f({
                           NAME:parsedData.name.fullName,
                             subjects : callData       
                       }))
                   })
-                    fs.writeFile("./users.json", JSON.stringify(j), function(err) {
-                        if(err) {
-                            return console.log(err);
-                        }
-                    }); 
               })
             } catch (e) {
               res.send(e.message);
@@ -140,6 +218,10 @@ router.get('/auth',(req,res) =>{
         })
     })
 });
-//HERE
+router.get('/getMatches',function(req, res, next) {
+    getMatches(decodeURI(req.query.id),decodeURI(req.query.subject),decodeURI(req.query.section),function(data){
+      res.json({"data" : data})
+    })
+})
 
 module.exports = router;
