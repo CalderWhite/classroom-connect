@@ -6,8 +6,6 @@ const port = process.env.PORT || 8080;
 var index = require("./routes/index")
 var appHandler = require("./routes/appHandler");
 
-
-
 app.use('/app', appHandler);
 app.use('/', index)
 
