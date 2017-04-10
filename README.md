@@ -38,6 +38,7 @@ Mayyybe a little python3 if we don't know how to do something.
 - [express](https://expressjs.com) : Main server Web framework
 - [swig](https://github.com/paularmstrong/swig) : Html rendering package
 - [pg](https://www.npmjs.com/package/pg) : Postgres Database interface
+- [googleapis](/#)
 
 ##### Frontend
 
