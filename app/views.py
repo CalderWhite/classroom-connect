@@ -5,7 +5,22 @@ import json
 from . import databaseManager, classroom
 import oauth2client.client
 
-# api ish stuff here
+def getKeyword(s):
+    nn = s.replace(" ","")
+    # set code to True if the string follows the format of course codes
+    if len(nn) >= 6:
+        nn = nn[:7]
+        if str(nn[3]) in ["1","2","3","4"]:
+            return nn
+    return "geography"
+
+# Errors
+class InvalidUserId(Exception):
+    """Error class if user makes request in the name of a user not in the database."""
+    def __init__(self):
+        message = "User id that was supplied is not in database."
+        super(InvalidUserId, self).__init__(message)
+
 # Create your views here.
 class Handler(object):
     def __init__(self,googleapi_s,firebase_s,scopes):
@@ -25,6 +40,11 @@ class Handler(object):
             "subjects" : {}
         }
         for i in subjects:
+            try:
+                i["section"]
+            except KeyError:
+                # the algorithm will ignore the section, if empty
+                i["section"] = ""
             data["subjects"][i["id"]] = {
                 "name" : i["name"],
                 "section" : i["section"],
@@ -59,6 +79,58 @@ class Handler(object):
             "subjects" : info[1]["subjects"],
             "code" : info[0]
         })
+    def getMatches(self,id,subject,section):
+        # exclude the user that is making the query for our matches
+        users = self.db.child("users").get(self.db.token).val()
+        try:
+            del users[id]
+        except KeyError:
+            raise InvalidUserId()
+        matched = []
+        for user in users:
+            for sub in users[user]["subjects"]:
+                keyword = getKeyword(users[user]["subjects"][sub]["name"])
+                if subject.find(keyword) >= 0:
+                    x = users[user]
+                    x["id"] = user
+                    matched.append(x)
+        # scrape marks
+        for k in range(len(matched)):
+            for j in matched[k]["subjects"].keys():
+                del matched[k]["subjects"][j]["average"]
+        return matched
+    def matchesHandler(self,request):
+        """
+        j = {"code" : 500,"message" : "Unknown internal server error."}
+        # parse query string
+        query = {}
+        for s in request.META["QUERY_STRING"].split("&"):
+            z = s.split("=")
+            query[z[0]]=z[1]
+        try:
+            j = self.getMatches(query["id"],query["subject"],query["section"])
+        except InvalidUserId:
+            j = {
+                "code" : 400,
+                "message" : "User id that was supplied is not in database."
+            }
+        except KeyError:
+            j = {
+                "code" : 400,
+                "message" : "Insufficient query string."
+            }
+        finally:
+            return JsonResponse(j)
+        """
+        j = {"code" : 500,"message" : "Unknown internal server error."}
+        # parse query string
+        query = {}
+        for s in request.META["QUERY_STRING"].split("&"):
+            z = s.split("=")
+            query[z[0]]=z[1]
+        j = {"matches" : self.getMatches(query["id"],query["subject"],query["section"])}
+        return HttpResponse(json.dumps(j,indent=4),content_type="application/json")
+
 scopes = [
   "https://www.googleapis.com/auth/classroom.courses",
   "https://www.googleapis.com/auth/classroom.coursework.me.readonly",

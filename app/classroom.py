@@ -51,6 +51,11 @@ def compileGrades(token,courseId):
         except KeyError:
             return -1
         for project in j["courseWork"]:
+            try:
+                project["maxPoints"]
+            except:
+                print("https://classroom.googleapis.com/v1/courses/" + courseId + "/courseWork?access_token=" + token)
+                return -1
             # TODO: create project validator that includes a max of 100 points.
             # (The reason this quazi works is the default value is 100, so if the teacher/admin changed it, it must be a viable project)
             if project["maxPoints"] != 100:

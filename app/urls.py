@@ -5,5 +5,6 @@ from . import views
 urlpatterns = [
     url(r'signup/$',views.handler.signupPage),
     url(r'login/$',views.handler.loginPage),
-    url(r'auth/$',views.handler.authenticate)
+    url(r'auth/$',views.handler.authenticate),
+    url(r'getMatches/$',views.handler.matchesHandler)
 ]
