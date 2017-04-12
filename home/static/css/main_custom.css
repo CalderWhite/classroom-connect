@@ -1,0 +1,9 @@
+#header{
+    list-style:none;
+}
+#header > .inner > li{
+    margin:3px;
+}
+.icon{
+    text-decoration: none !important;
+}
