@@ -5,6 +5,7 @@ const google = require('googleapis');
 const OAuth2 = google.auth.OAuth2;
 const swig = require('swig')
 const https = require('https')
+
 var utils = {
   z:0
 }
@@ -123,6 +124,7 @@ function compileGrades(token,id,courseId,iter,callback){
 function getMatches(id,subject,section,callback){
     fs.readFile('users.json',function(err,content){
         var j = JSON.parse(content)
+        console.log(j)
         // define the type of the subject string
         var lookforcode = true;
         if(subject.split(" ")[0].length != 6){
