@@ -96,7 +96,13 @@ ENV/
 # mkdocs documentation
 /site
 
+<<<<<<< HEAD
 # sensitive info
 client_secret.json
 firebase_secret.json
 django_secret.json
+=======
+#sensitive info
+client_secret.json
+firebase_secret.json
+>>>>>>> master
