@@ -1,0 +1,1 @@
+web: gunicorn classroomConnect.wsgi --log-file -

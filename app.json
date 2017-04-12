@@ -1,0 +1,8 @@
+{
+  "name": "classroom-connect",
+  "description": "The safe, and secure platform for connecting Students all across Ontario.",
+  "image": "heroku/python",
+  "repository": "https://github.com/CalderWhite/classroom-connect",
+  "keywords": ["python", "django" ],
+  "addons": []
+}
