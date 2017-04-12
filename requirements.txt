@@ -1,4 +1,4 @@
 Django==1.9
 requests==2.11.1
-pyrebase==latest
+pyrebase==3.0.27
 oauth2client==3.0.0
