@@ -12,7 +12,7 @@ def getKeyword(s):
         nn = nn[:7]
         if str(nn[3]) in ["1","2","3","4"]:
             return nn
-    return "geography"
+    return s.split(" ")
 
 # Errors
 class InvalidUserId(Exception):
@@ -28,38 +28,41 @@ class Handler(object):
         self.AUTH_URL = self.auth.get_auth_url()
         self.db = databaseManager.Database(firebase_s)
     def addUser(self,token):
-        # get user's name and id
-        user = classroom.get_user(token)
-        # get user's averages
-        subjects = classroom.get_subjects(token)
-        for i,course in enumerate(subjects):
-            subjects[i]["average"] = classroom.compileGrades(token,course["id"])
-        # datbase dicts
-        data = {
-            "fullName" : user["name"]["fullName"],
-            "subjects" : {}
-        }
-        for i in subjects:
-            try:
-                i["section"]
-            except KeyError:
-                # the algorithm will ignore the section, if empty
-                i["section"] = ""
-            data["subjects"][i["id"]] = {
-                "name" : i["name"],
-                "section" : i["section"],
-                "average" : i["average"]
+        try:
+            # get user's name and id
+            user = classroom.get_user(token)
+            # get user's averages
+            subjects = classroom.get_subjects(token)
+            for i,course in enumerate(subjects):
+                subjects[i]["average"] = classroom.compileGrades(token,course["id"])
+            # datbase dicts
+            data = {
+                "fullName" : user["name"]["fullName"],
+                "subjects" : {}
             }
-        # check if this user has already signed up
-        if self.db.child("users/" + user["id"]).get(self.db.token).val() == None : 
-            # SET
-            self.db.child("users").child(user["id"]).set(data,self.db.token)
-            pass
-        else:
-            # UPDATE
-            self.db.child("users").child(user["id"]).update(data,self.db.token)
-        # return, so we can use this is the response, after logging in or signing up
-        return [user["id"],data]
+            for i in subjects:
+                try:
+                    i["section"]
+                except KeyError:
+                    # the algorithm will ignore the section, if empty
+                    i["section"] = ""
+                data["subjects"][i["id"]] = {
+                    "name" : i["name"],
+                    "section" : i["section"],
+                    "average" : i["average"]
+                }
+            # check if this user has already signed up
+            if self.db.child("users/" + user["id"]).get(self.db.token).val() == None : 
+                # SET
+                self.db.child("users").child(user["id"]).set(data,self.db.token)
+                pass
+            else:
+                # UPDATE
+                self.db.child("users").child(user["id"]).update(data,self.db.token)
+            # return, so we can use this is the response, after logging in or signing up
+            return [user["id"],data]
+        except:
+            return False
     def signupPage(self,request):
         return render(request,"app/signup.html",context={"auth_url":self.AUTH_URL})
     def loginPage(self,request):
@@ -73,12 +76,15 @@ class Handler(object):
         except oauth2client.client.FlowExchangeError:
             return JsonResponse({"message" : "code parameter expired.","status_code" : 400},status=400)
         info = self.addUser(token.access_token)
-        #return JsonResponse(info[1]["subjects"])
-        return render(request,"app/app.html",context={
-            "NAME" : info[1]["fullName"],
-            "subjects" : info[1]["subjects"],
-            "code" : info[0]
-        })
+        if type(info) == bool:
+            return JsonResponse({"token" : token.access_token})
+        else:
+            #return JsonResponse(info[1]["subjects"])
+            return render(request,"app/app.html",context={
+                "NAME" : info[1]["fullName"],
+                "subjects" : info[1]["subjects"],
+                "code" : info[0]
+            })
     def getMatches(self,id,subject,section):
         # exclude the user that is making the query for our matches
         users = self.db.child("users").get(self.db.token).val()
@@ -90,10 +96,24 @@ class Handler(object):
         for user in users:
             for sub in users[user]["subjects"]:
                 keyword = getKeyword(users[user]["subjects"][sub]["name"])
-                if subject.find(keyword) >= 0:
-                    x = users[user]
-                    x["id"] = user
-                    matched.append(x)
+                if type(keyword) == str:
+                    if subject.find(keyword) >= 0:
+                        x = users[user]
+                        x["id"] = user
+                        matched.append(x)
+                elif type(keyword) == list:
+                    # exclude integers
+                    delz = []
+                    for i in range(len(keyword)):
+                        try:
+                            int(keyword[i])
+                        except ValueError:
+                            delz.append(i)
+                    for i in delz:
+                        del keyword[i]
+                else:
+                    # what is this??
+                    raise Exception("Unknown datatype recived from [getKeyword()]")
         # scrape marks
         for k in range(len(matched)):
             for j in matched[k]["subjects"].keys():

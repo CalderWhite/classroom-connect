@@ -67,10 +67,15 @@ def compileGrades(token,courseId):
                 raise Exception("BAD STATUS CODE WHILE GETTING STUDENT PROJECT SUBMISSION in [compileGrades].")
             else:
                 j = json.loads(res.text)
-                grades.append(j["studentSubmissions"][0]["assignedGrade"] / project["maxPoints"])
+                try:
+                    grades.append(j["studentSubmissions"][0]["assignedGrade"] / project["maxPoints"])
+                except KeyError:
+                    # For whatever reason, one of these isn't there...
+                    # For now, do nothing.
+                    pass
         # find the average of grades
         if len(grades) < 1:
-            avg = -1
+            return -1
         else:
             avg = 0
             for i in grades:
