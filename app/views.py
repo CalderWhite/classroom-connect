@@ -38,9 +38,13 @@ class Handler(object):
     Handler object for the app, so we don't have to authenticate everytime we make a request. Only on object creation.
     """
     def __init__(self,googleapi_s,firebase_s,scopes):
-        self.auth = classroom.Auth(googleapi_s,scopes)
-        self.AUTH_URL = self.auth.get_auth_url()
-        self.db = databaseManager.Database(firebase_s)
+        try:
+            self.auth = classroom.Auth(googleapi_s,scopes)
+            self.AUTH_URL = self.auth.get_auth_url()
+            self.db = databaseManager.Database(firebase_s)
+        except FileNotFoundError:
+            # we have to accept this error so readthedocs will run properly
+            print("FILE NOT FOUND!")
     def addUser(self,token):
         """
         :type token: string
