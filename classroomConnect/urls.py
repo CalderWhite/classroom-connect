@@ -19,12 +19,11 @@ Including another URLconf
     3. Add a URL to urlpatterns:  url(r'^blog/', include(blog_urls))
     
 """
-if __name__ == '__main__':
-    from django.conf.urls import url, include
-    from django.contrib import admin
-    
-    urlpatterns = [
-        url(r'^admin/', admin.site.urls),
-        url(r'^app/',include('app.urls')),
-        url(r'^', include('home.urls'))
-    ]
+from django.conf.urls import url, include
+from django.contrib import admin
+
+urlpatterns = [
+    url(r'^admin/', admin.site.urls),
+    url(r'^app/',include('app.urls')),
+    url(r'^', include('home.urls'))
+]
