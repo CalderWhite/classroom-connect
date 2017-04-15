@@ -1,7 +1,11 @@
+"""
+Handles all requests in respect to the "app" (Main functionality of this webserver).
+"""
 from django.shortcuts import render
 from django.shortcuts import redirect
 from django.http import JsonResponse, HttpResponse
 import json
+import urllib.parse
 from . import databaseManager, classroom
 import oauth2client.client
 
@@ -9,7 +13,7 @@ def getKeyword(s):
     nn = s.replace(" ","")
     # set code to True if the string follows the format of course codes
     if len(nn) >= 6:
-        nn = nn[:7]
+        nn = nn[:6]
         if str(nn[3]) in ["1","2","3","4"]:
             return nn
     return s.split(" ")
@@ -23,11 +27,27 @@ class InvalidUserId(Exception):
 
 # Create your views here.
 class Handler(object):
+    """
+    :type googleapi_s: string
+    :param googleapi_s: The filename of the `google service secret json file. <https://developers.google.com/api-client-library/python/guide/aaa_client_secrets>`_.
+    :type firebase_s: string
+    :param firebase_s: The filename of a our `custom firebase json files <#app.databaseManager.Database>`_
+    :type scopes: list
+    :param scopes: A list of `google api scopes`_
+    
+    Handler object for the app, so we don't have to authenticate everytime we make a request. Only on object creation.
+    """
     def __init__(self,googleapi_s,firebase_s,scopes):
         self.auth = classroom.Auth(googleapi_s,scopes)
         self.AUTH_URL = self.auth.get_auth_url()
         self.db = databaseManager.Database(firebase_s)
     def addUser(self,token):
+        """
+        :type token: string
+        :param token: The ``access_token`` of the user you want to add.
+        
+        Attempt to add a user (according to the ``token``) to our firebase user database.
+        """
         try:
             # get user's name and id
             user = classroom.get_user(token)
@@ -64,10 +84,29 @@ class Handler(object):
         except:
             return False
     def signupPage(self,request):
+        """
+        Returns a rendered template ``app/signup.html`` with added context of
+        
+        .. code-block:: python
+        
+            {
+                "auth_url" : self.AUTH_URL
+            }
+        
+        See the source code for ``__init__`` for info on ``self.AUTH_URL``.
+        
+        """
         return render(request,"app/signup.html",context={"auth_url":self.AUTH_URL})
     def loginPage(self,request):
+        """
+        redirects the user to the ``self.AUTH_URL`` (see source code).
+        """
         return redirect(self.AUTH_URL)
     def authenticate(self,request):
+        """
+        Forwards request data to `classroom.get_token() <#app.classroom.Auth.get_token>`_
+        Requires 1 ``QUERY_STRING`` variable : ``code``
+        """
         query = {}
         for i in request.META["QUERY_STRING"].split("&"):
             query[i.split("=")[0]] = i.split("=")[1]
@@ -77,7 +116,7 @@ class Handler(object):
             return JsonResponse({"message" : "code parameter expired.","status_code" : 400},status=400)
         info = self.addUser(token.access_token)
         if type(info) == bool:
-            return JsonResponse({"token" : token.access_token})
+            return JsocnResponse({"token" : token.access_token})
         else:
             #return JsonResponse(info[1]["subjects"])
             return render(request,"app/app.html",context={
@@ -86,6 +125,14 @@ class Handler(object):
                 "code" : info[0]
             })
     def getMatches(self,id,subject,section):
+        """
+        :type id: string
+        :param id: The id of the user that wants to get matches. This was the method will not return the user themself.
+        :type subject: string
+        :param subject: The string representing the subject that want to get matches for.
+        :type section: string
+        :param section: The string representing the section (period) of the user's class.
+        """
         # exclude the user that is making the query for our matches
         users = self.db.child("users").get(self.db.token).val()
         try:
@@ -97,7 +144,8 @@ class Handler(object):
             for sub in users[user]["subjects"]:
                 keyword = getKeyword(users[user]["subjects"][sub]["name"])
                 if type(keyword) == str:
-                    if subject.find(keyword) >= 0:
+                    print(subject.replace(" ","").find(keyword),subject,keyword)
+                    if subject.replace(" ","").find(keyword) >= 0:
                         x = users[user]
                         x["id"] = user
                         matched.append(x)
@@ -109,8 +157,10 @@ class Handler(object):
                             int(keyword[i])
                         except ValueError:
                             delz.append(i)
-                    for i in delz:
-                        del keyword[i]
+                    keywords = []
+                    for i in keyword:
+                        if i not in delz:
+                            keywords.append(i)
                 else:
                     # what is this??
                     raise Exception("Unknown datatype recived from [getKeyword()]")
@@ -120,6 +170,9 @@ class Handler(object):
                 del matched[k]["subjects"][j]["average"]
         return matched
     def matchesHandler(self,request):
+        """
+        Forwards all the data from the ``QUERY_STRING`` into the `getMatches <#app.views.Handler.getMatches>`_ method.
+        """
         """
         j = {"code" : 500,"message" : "Unknown internal server error."}
         # parse query string
@@ -145,7 +198,7 @@ class Handler(object):
         j = {"code" : 500,"message" : "Unknown internal server error."}
         # parse query string
         query = {}
-        for s in request.META["QUERY_STRING"].split("&"):
+        for s in urllib.parse.unquote(request.META["QUERY_STRING"]).split("&"):
             z = s.split("=")
             query[z[0]]=z[1]
         j = {"matches" : self.getMatches(query["id"],query["subject"],query["section"])}

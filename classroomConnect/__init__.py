@@ -1,0 +1,3 @@
+"""
+Main Django folder/package.
+"""
