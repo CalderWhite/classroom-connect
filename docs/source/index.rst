@@ -9,6 +9,8 @@ Welcome to Classroom Connect's documentation!
 .. toctree::
    :maxdepth: 3
    
+   developement
+   
    app
    
    home
