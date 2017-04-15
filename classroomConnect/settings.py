@@ -27,7 +27,9 @@ STATIC_URL = '/assets/'
 
 # SECURITY WARNING: keep the secret key used in production secret!
 import json
-SECRET_KEY = json.loads(open("django_secret.json",'r').read())["secret"]
+# we have to use os.path.exists so readthedocs.org will run properly
+if os.path.exists("./django_secret.json"):
+    SECRET_KEY = json.loads(open("django_secret.json",'r').read())["secret"]
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
