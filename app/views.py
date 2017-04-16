@@ -16,7 +16,7 @@ def getKeyword(s):
         nn = nn[:6]
         if str(nn[3]) in ["1","2","3","4"]:
             return nn
-    return s.split(" ")
+    return s.lower().split(" ")
 
 # Errors
 class InvalidUserId(Exception):
@@ -148,23 +148,34 @@ class Handler(object):
             for sub in users[user]["subjects"]:
                 keyword = getKeyword(users[user]["subjects"][sub]["name"])
                 if type(keyword) == str:
-                    print(subject.replace(" ","").find(keyword),subject,keyword)
                     if subject.replace(" ","").find(keyword) >= 0:
-                        x = users[user]
-                        x["id"] = user
-                        matched.append(x)
+                        this_user = users[user]
+                        this_user["id"] = user
+                        matched.append(this_user)
                 elif type(keyword) == list:
                     # exclude integers
-                    delz = []
-                    for i in range(len(keyword)):
-                        try:
-                            int(keyword[i])
-                        except ValueError:
-                            delz.append(i)
-                    keywords = []
-                    for i in keyword:
-                        if i not in delz:
-                            keywords.append(i)
+                    keyword = [x for x in keyword if not (x.isdigit() 
+                                         or x[0] == '-' and x[1:].isdigit())]
+                    subject_l = [x for x in subject.lower().split(" ") if not (x.isdigit() 
+                                         or x[0] == '-' and x[1:].isdigit())]
+                                         
+                    finds = 0
+                    g = None
+                    if len(keyword) > len(subject_l):
+                        for i in subject_l:
+                            if i in keyword:
+                                finds+=1
+                        g = len(subject_l)
+                    else:
+                        for i in keyword:
+                            if i in subject_l:
+                                finds+=1
+                        g = len(subject_l)
+                    # Go by the smallest one, since we only want the on to fit into the other.
+                    if g == 1 and finds >= 1 or finds >= int(g/2):
+                        this_user = users[user]
+                        this_user["id"] = user
+                        matched.append(this_user)
                 else:
                     # what is this??
                     raise Exception("Unknown datatype recived from [getKeyword()]")
