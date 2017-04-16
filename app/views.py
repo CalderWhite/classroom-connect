@@ -144,6 +144,7 @@ class Handler(object):
         except KeyError:
             raise InvalidUserId()
         matched = []
+        # with this algorithm, double users shouldn't be an issue
         for user in users:
             for sub in users[user]["subjects"]:
                 keyword = getKeyword(users[user]["subjects"][sub]["name"])
@@ -160,7 +161,7 @@ class Handler(object):
                                          or x[0] == '-' and x[1:].isdigit())]
                                          
                     finds = 0
-                    g = None
+                    g = "DERP"
                     if len(keyword) > len(subject_l):
                         for i in subject_l:
                             if i in keyword:
@@ -172,7 +173,12 @@ class Handler(object):
                                 finds+=1
                         g = len(subject_l)
                     # Go by the smallest one, since we only want the on to fit into the other.
-                    if g == 1 and finds >= 1 or finds >= int(g/2):
+                    if g == 1 and finds >= g:
+                        this_user = users[user]
+                        this_user["id"] = user
+                        matched.append(this_user)
+                    elif finds >= int(g/2) and int(g/2) > 0:
+                        print(finds,g)
                         this_user = users[user]
                         this_user["id"] = user
                         matched.append(this_user)
@@ -181,7 +187,7 @@ class Handler(object):
                     raise Exception("Unknown datatype recived from [getKeyword()]")
         # scrape marks
         for k in range(len(matched)):
-            for j in matched[k]["subjects"].keys():
+            for j in matched[k]["subjects"]:
                 del matched[k]["subjects"][j]["average"]
         return matched
     def matchesHandler(self,request):
