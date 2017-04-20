@@ -1,7 +1,8 @@
 .row{
     margin:0px;
 }
-tbody > tr:hover:not(#access_window){
+tbody > tr:
+:not(#access_window){
     background:#F0F0F0;
 }
 /* getMatches styles */
@@ -64,4 +65,46 @@ tbody > tr:hover:not(#access_window){
 @keyframes b-spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(-360deg); }
+}
+/* crap */
+.close.heavy::before, .close.heavy::after {
+  height: 12px;
+  margin-top: -6px;
+}
+.close.pointy::Before, .close.pointy::after {
+  width: 200%;
+  left: -50%;
+}
+.close {
+  position: relative;
+  display: inline-block;
+  width: 150px;
+  height: 150px;
+  overflow: hidden;
+  float:none;
+  opacity: 1 !important;
+}
+.close::before, .close::after {
+  content: '';
+  position: absolute;
+  height: 2px;
+  width: 100%;
+  top: 50%;
+  left: 0;
+  margin-top: -1px;
+  background: red;
+}
+.close::before {
+  -webkit-transform: rotate(45deg);
+  -moz-transform: rotate(45deg);
+  -ms-transform: rotate(45deg);
+  -o-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+.close::after {
+  -webkit-transform: rotate(-45deg);
+  -moz-transform: rotate(-45deg);
+  -ms-transform: rotate(-45deg);
+  -o-transform: rotate(-45deg);
+  transform: rotate(-45deg);
 }

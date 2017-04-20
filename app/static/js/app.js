@@ -10,6 +10,20 @@ function insertClassmates(data){
         a.appendChild(x)
     }
 }
+function insertError(data){
+    var xz = document.getElementById("access_window").children[0]
+    xz.removeChild(xz.firstChild)
+    var y = document.createElement("div")
+    y.className = "close heavy pointy"
+    var x = document.createElement("center")
+    x.appendChild(y)
+    xz.appendChild(x)
+    var x2 = document.createElement("center")
+    var p = document.createElement("p")
+    p.textContent = "Couldn't get matches due to Error:[" + data.statusText + "], try logging in again."
+    x2.appendChild(p)
+    xz.appendChild(x2)
+}
 function openClass(element,user,sub,sec){
     // remember, this function is only meant to run with MAYBE 8 classes in the page.
     const url = "/app/getMatches?id=" + user + "&subject=" + sub + "&section=" + sec;
@@ -45,7 +59,16 @@ function openClass(element,user,sub,sec){
         wn.appendChild(mwn)
         td.appendChild(wn)
         r.appendChild(td)
-        $.get(url,null,insertClassmates)
+        $.ajax(url,{
+            complete:function(s){
+                if(s.status != 200 && s.status != 304){
+                    console.log(s)
+                    insertError(s)
+                } else{
+                    insertClassmates(s.responseJSON)
+                }
+            }
+        })
         $(td).animate({
             height : (window.innerHeight * 0.5).toString() + "px"
         },1000)
