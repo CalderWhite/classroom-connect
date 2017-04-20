@@ -52,41 +52,38 @@ class Handler(object):
         
         Attempt to add a user (according to the ``token``) to our firebase user database.
         """
-        try:
-            # get user's name and id
-            user = classroom.get_user(token)
-            # get user's averages
-            subjects = classroom.get_subjects(token)
-            for i,course in enumerate(subjects):
-                subjects[i]["average"] = classroom.compileGrades(token,course["id"])
-            # datbase dicts
-            data = {
-                "fullName" : user["name"]["fullName"],
-                "subjects" : {}
+        # get user's name and id
+        user = classroom.get_user(token)
+        # get user's averages
+        subjects = classroom.get_subjects(token)
+        for i,course in enumerate(subjects):
+            subjects[i]["average"] = classroom.compileGrades(token,course["id"])
+        # datbase dicts
+        data = {
+            "fullName" : user["name"]["fullName"],
+            "subjects" : {}
+        }
+        for i in subjects:
+            try:
+                i["section"]
+            except KeyError:
+                # the algorithm will ignore the section, if empty
+                i["section"] = ""
+            data["subjects"][i["id"]] = {
+                "name" : i["name"],
+                "section" : i["section"],
+                "average" : i["average"]
             }
-            for i in subjects:
-                try:
-                    i["section"]
-                except KeyError:
-                    # the algorithm will ignore the section, if empty
-                    i["section"] = ""
-                data["subjects"][i["id"]] = {
-                    "name" : i["name"],
-                    "section" : i["section"],
-                    "average" : i["average"]
-                }
-            # check if this user has already signed up
-            if self.db.child("users/" + user["id"]).get(self.db.token).val() == None : 
-                # SET
-                self.db.child("users").child(user["id"]).set(data,self.db.token)
-                pass
-            else:
-                # UPDATE
-                self.db.child("users").child(user["id"]).update(data,self.db.token)
-            # return, so we can use this is the response, after logging in or signing up
-            return [user["id"],data]
-        except:
-            return False
+        # check if this user has already signed up
+        if self.db.child("users/" + user["id"]).get(self.db.token).val() == None : 
+            # SET
+            self.db.child("users").child(user["id"]).set(data,self.db.token)
+            pass
+        else:
+            # UPDATE
+            self.db.child("users").child(user["id"]).update(data,self.db.token)
+        # return, so we can use this is the response, after logging in or signing up
+        return [user["id"],data]
     def signupPage(self,request):
         """
         Returns a rendered template ``app/signup.html`` with added context of
@@ -119,8 +116,9 @@ class Handler(object):
         except oauth2client.client.FlowExchangeError:
             return JsonResponse({"message" : "code parameter expired.","status_code" : 400},status=400)
         info = self.addUser(token.access_token)
+        print("halo")
         if type(info) == bool:
-            return JsocnResponse({"token" : token.access_token})
+            return JsonResponse({"token" : token.access_token})
         else:
             #return JsonResponse(info[1]["subjects"])
             return render(request,"app/app.html",context={
