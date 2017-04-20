@@ -116,7 +116,6 @@ class Handler(object):
         except oauth2client.client.FlowExchangeError:
             return JsonResponse({"message" : "code parameter expired.","status_code" : 400},status=400)
         info = self.addUser(token.access_token)
-        print("halo")
         if type(info) == bool:
             return JsonResponse({"token" : token.access_token})
         else:
@@ -176,7 +175,7 @@ class Handler(object):
                         this_user["id"] = user
                         matched.append(this_user)
                     elif finds >= int(g/2) and int(g/2) > 0:
-                        print(finds,g)
+                        ##print(finds,g)
                         this_user = users[user]
                         this_user["id"] = user
                         matched.append(this_user)

@@ -3,6 +3,8 @@ function insertClassmates(data){
     xz.removeChild(xz.firstChild)
     // actual appending
     var a = document.createElement("ol");
+    //a.start = "50"
+    a.className = "rectangle-list"
     xz.appendChild(a)
     for(i in data.matches){
         var x = document.createElement("li");
@@ -30,6 +32,11 @@ function openClass(element,user,sub,sec){
     var t =document.getElementById("subjects").getElementsByTagName('tbody')[0];
     var w = document.getElementById("access_window")
     if(w != null){
+        $('#access_window td').fadeTo(100,0)
+        setTimeout(function() {
+            $('#access_window td').css("line-height","0px")
+            //$('#access_window').css('line-height','0px')
+        },101)
         $("#access_window td").animate({
             height : "0px"
         },500)
