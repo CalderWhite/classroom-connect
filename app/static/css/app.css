@@ -1,8 +1,7 @@
 .row{
     margin:0px;
 }
-tbody > tr:
-:not(#access_window){
+tbody > tr:hover{
     background:#F0F0F0;
 }
 /* getMatches styles */
