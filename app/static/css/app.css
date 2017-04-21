@@ -115,7 +115,9 @@ ol {
     *list-style: decimal; /* Keep using default numbering for IE6/7 */
     font: 15px 'trebuchet MS', 'lucida sans';
 }
-
+.rectangle-list{
+  opacity: 0;
+}
 .rectangle-list li{
     position: relative;
     display: block;

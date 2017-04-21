@@ -9,14 +9,29 @@ import urllib.parse
 from . import databaseManager, classroom
 import oauth2client.client
 
+# excludes for course algorithm
+global keywordExcludes
+keywordExcludes = ["grade","1","2","3","4","5","6","7","8","9","0"]
+
 def getKeyword(s):
+    # pretty bad "algorithm". If this project ever gets bigger I might improve this.
     nn = s.replace(" ","")
     # set code to True if the string follows the format of course codes
     if len(nn) >= 6:
         nn = nn[:6]
         if str(nn[3]) in ["1","2","3","4"]:
             return nn
-    return s.lower().split(" ")
+    nl = s.lower().split(" ")
+    nlr = []
+    for n in nl:
+        c = False
+        for ex in keywordExcludes:
+            if n.find(ex) >= 0:
+                c = True
+                break
+        if not c:
+            nlr.append(n)
+    return nlr
 
 # Errors
 class InvalidUserId(Exception):

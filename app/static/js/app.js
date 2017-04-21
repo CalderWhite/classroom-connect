@@ -1,6 +1,6 @@
 function insertClassmates(data){
     var xz = document.getElementById("access_window").children[0]
-    xz.removeChild(xz.firstChild)
+    //xz.removeChild(xz.firstChild)
     // actual appending
     var a = document.createElement("ol");
     //a.start = "50"
@@ -11,6 +11,8 @@ function insertClassmates(data){
         x.textContent = data.matches[i].fullName
         a.appendChild(x)
     }
+    console.log($(a))
+    $(a).fadeTo(500,1)
 }
 function insertError(data){
     var xz = document.getElementById("access_window").children[0]
@@ -35,14 +37,18 @@ function openClass(element,user,sub,sec){
         $('#access_window td').fadeTo(100,0)
         setTimeout(function() {
             $('#access_window td').css("line-height","0px")
-            //$('#access_window').css('line-height','0px')
+            $('#access_window').css('line-height','0px')
         },101)
         $("#access_window td").animate({
             height : "0px"
         },500)
         setTimeout(function() {
-            document.getElementById("subjects").getElementsByTagName('tbody')[0].removeChild(document.getElementById("access_window"))
-        },500)
+            console.log($('#access_window td'))
+            $('#access_window td')[0].remove("ol")
+        },300)
+        setTimeout(function() {
+            t.removeChild(document.getElementById("access_window"))
+        },400)
     }
     var tm = 0;
     if(w != null){
@@ -72,17 +78,21 @@ function openClass(element,user,sub,sec){
                     console.log(s)
                     insertError(s)
                 } else{
-                    insertClassmates(s.responseJSON)
+                    var xz = document.getElementById("access_window").children[0]
+                    xz.removeChild(xz.firstChild)
+                    setTimeout(function() {
+                        insertClassmates(s.responseJSON)
+                    },1001)
+                  $(td).animate({
+                        height : (window.innerHeight * 0.5).toString() + "px"
+                    },1000)
+                    setTimeout(function() {
+                        $('html, body').animate({
+                            scrollTop: $("#access_window").offset().top
+                        }, 750);  
+                    },1001)
                 }
             }
         })
-        $(td).animate({
-            height : (window.innerHeight * 0.5).toString() + "px"
-        },1000)
-        setTimeout(function() {
-            $('html, body').animate({
-                scrollTop: $("#access_window").offset().top
-            }, 750);  
-        },1001)
     },tm)
 }
