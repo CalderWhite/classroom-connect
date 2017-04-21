@@ -14,6 +14,24 @@ function insertClassmates(data){
     console.log($(a))
     $(a).fadeTo(500,1)
 }
+function removeActive(){
+    var t =document.getElementById("subjects").getElementsByTagName('tbody')[0];
+    $('#access_window td').fadeTo(100,0)
+    setTimeout(function() {
+        $('#access_window td').css("line-height","0px")
+        $('#access_window').css('line-height','0px')
+    },101)
+    $("#access_window td").animate({
+        height : "0px"
+    },500)
+    setTimeout(function() {
+        console.log($('#access_window td'))
+        $('#access_window td')[0].remove("ol")
+    },300)
+    setTimeout(function() {
+        t.removeChild(document.getElementById("access_window"))
+    },400)
+}
 function insertError(data){
     var xz = document.getElementById("access_window").children[0]
     xz.removeChild(xz.firstChild)
@@ -30,25 +48,21 @@ function insertError(data){
 }
 function openClass(element,user,sub,sec){
     // remember, this function is only meant to run with MAYBE 8 classes in the page.
+    //console.log(element)
+    if(element.dataset.active == "true"){
+        console.log(element.dataset.active,element.dataset)
+        removeActive()
+        element.dataset.active = false;
+        // return null to break function.
+        return null
+    }
+    element.dataset.active = true;
+    
     const url = "/app/getMatches?id=" + user + "&subject=" + sub + "&section=" + sec;
     var t =document.getElementById("subjects").getElementsByTagName('tbody')[0];
     var w = document.getElementById("access_window")
     if(w != null){
-        $('#access_window td').fadeTo(100,0)
-        setTimeout(function() {
-            $('#access_window td').css("line-height","0px")
-            $('#access_window').css('line-height','0px')
-        },101)
-        $("#access_window td").animate({
-            height : "0px"
-        },500)
-        setTimeout(function() {
-            console.log($('#access_window td'))
-            $('#access_window td')[0].remove("ol")
-        },300)
-        setTimeout(function() {
-            t.removeChild(document.getElementById("access_window"))
-        },400)
+        removeActive()
     }
     var tm = 0;
     if(w != null){
@@ -75,7 +89,6 @@ function openClass(element,user,sub,sec){
         $.ajax(url,{
             complete:function(s){
                 if(s.status != 200 && s.status != 304){
-                    console.log(s)
                     insertError(s)
                 } else{
                     var xz = document.getElementById("access_window").children[0]
